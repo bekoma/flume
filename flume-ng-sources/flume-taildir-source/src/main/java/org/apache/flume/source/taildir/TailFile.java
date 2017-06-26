@@ -54,6 +54,9 @@ public class TailFile {
   private int bufferPos;
   private long lineReadPos;
 
+  LineResult lineResult = null;
+  private static final byte[] BYTE_NL_ARR = { BYTE_NL };
+
   public TailFile(File file, Map<String, String> headers, long inode, long pos)
       throws IOException {
     this.raf = new RandomAccessFile(file, "r");
@@ -137,35 +140,48 @@ public class TailFile {
 
 
   public List<Event> readEvents(int numEvents, boolean backoffWithoutNL,
-      boolean addByteOffset) throws IOException {
+      boolean addByteOffset, String regexSeparator) throws IOException {
     List<Event> events = Lists.newLinkedList();
-    for (int i = 0; i < numEvents; i++) {
-      Event event = readEvent(backoffWithoutNL, addByteOffset);
-      if (event == null) {
+    Long posTmp = getLineReadPos();
+
+    if (null == lineResult) {
+      lineResult = readLine();
+      if (backoffWithoutNL && !lineResult.lineSepInclude) {
+        logger.info("Backing off in file without newline: "
+                + path + ", inode: " + inode + ", pos: " + raf.getFilePointer());
+        updateFilePos(posTmp);
+        return events;
+      }
+    }
+    for (int i = 0; i < numEvents;) {
+      LineResult tmpResult = readLine();
+      if (null == tmpResult) {
         break;
       }
-      events.add(event);
+      if (backoffWithoutNL && !tmpResult.lineSepInclude) {
+        logger.info("Backing off in file without newline: "
+                + path + ", inode: " + inode + ", pos: " + raf.getFilePointer());
+        updateFilePos(posTmp);
+        return events;
+      }
+      if (new String(tmpResult.line).matches(regexSeparator)) {
+        Event event = EventBuilder.withBody(lineResult.line);
+        if (addByteOffset == true) {
+          event.getHeaders().put(BYTE_OFFSET_HEADER_KEY, posTmp.toString());
+        }
+        events.add(event);
+        lineResult = tmpResult;
+        i++;
+      }
+      else {
+        lineResult.line = concatByteArrays(lineResult.line, 0, lineResult.line.length,
+                BYTE_NL_ARR, 0, BYTE_NL_ARR.length);
+        lineResult.line = concatByteArrays(lineResult.line, 0, lineResult.line.length,
+                tmpResult.line, 0, tmpResult.line.length);
+      }
     }
-    return events;
-  }
 
-  private Event readEvent(boolean backoffWithoutNL, boolean addByteOffset) throws IOException {
-    Long posTmp = getLineReadPos();
-    LineResult line = readLine();
-    if (line == null) {
-      return null;
-    }
-    if (backoffWithoutNL && !line.lineSepInclude) {
-      logger.info("Backing off in file without newline: "
-          + path + ", inode: " + inode + ", pos: " + raf.getFilePointer());
-      updateFilePos(posTmp);
-      return null;
-    }
-    Event event = EventBuilder.withBody(line.line);
-    if (addByteOffset == true) {
-      event.getHeaders().put(BYTE_OFFSET_HEADER_KEY, posTmp.toString());
-    }
-    return event;
+    return events;
   }
 
   private void readFile() throws IOException {
@@ -248,7 +264,7 @@ public class TailFile {
 
   private class LineResult {
     final boolean lineSepInclude;
-    final byte[] line;
+    byte[] line;
 
     public LineResult(boolean lineSepInclude, byte[] line) {
       super();

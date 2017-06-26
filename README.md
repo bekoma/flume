@@ -16,8 +16,50 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
+## 修改点：
+在flume-1.7分支上做了如下修改：
+* 解决了日志文件名变动后，会重复读取的问题；
+* 之前taildir-source是一个event读取一行，每次批量读取N个event到channel，碰到日志里有异常栈的时候就会出问题，会出现读取的日志不完整，改成按照某个分隔符切分，比如按照时间日期，这样一个event里就是一个完整的可处理的日志，比如我们的日志格式如下：
+```text
+2017-06-26 21:34:13.222 INFO  com.zxx.test.flume.log.AppenderTest - (AppenderTest.java:24) - xxxxHello world!Hello world!1498484053222
+2017-06-26 21:34:13.223 INFO  com.zxx.test.flume.log.AppenderTest - (AppenderTest.java:25) - yyyDDDDDDDDDDDDDDDDDDDDD1498484053222
+2017-06-26 21:34:13.223 ERROR com.zxx.test.flume.log.AppenderTest - (AppenderTest.java:26) - ExceptionExceptionException:1498484053222
+java.lang.RuntimeException: runtime exception
+	at com.zxx.test.flume.log.AppenderTest.test(AppenderTest.java:26)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleElement.invoke(InitDestroyAnnotationBeanPostProcessor.java:366)
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor$LifecycleMetadata.invokeInitMethods(InitDestroyAnnotationBeanPostProcessor.java:311)
+	at org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization(InitDestroyAnnotationBeanPostProcessor.java:134)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.applyBeanPostProcessorsBeforeInitialization(AbstractAutowireCapableBeanFactory.java:409)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.initializeBean(AbstractAutowireCapableBeanFactory.java:1620)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:555)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:483)
+	at org.springframework.beans.factory.support.AbstractBeanFactory$1.getObject(AbstractBeanFactory.java:306)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:230)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:302)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:197)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:761)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:867)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:543)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:693)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:360)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:303)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1118)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1107)
+	at com.zxx.test.flume.FlumeAppenderTestApplication.main(FlumeAppenderTestApplication.java:10)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:606)
+	at com.intellij.rt.execution.application.AppMain.main(AppMain.java:147)
+2017-06-26 21:35:13.222 INFO  com.zxx.test.flume.log.AppenderTest - (AppenderTest.java:24) - xxxxHello world!Hello world!3452453452345
+```
+我们就是以这种格式2017-06-26 21:35:13.222作为分割，这样后续sink到kafka等框架后就是完整的日志。
 
-# Welcome to Apache Flume!
+## Welcome to Apache Flume!
 
 Apache Flume is a distributed, reliable, and available service for efficiently
 collecting, aggregating, and moving large amounts of log data. It has a simple

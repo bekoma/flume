@@ -86,6 +86,7 @@ public class TaildirSource extends AbstractSource implements
   private Long maxBackOffSleepInterval;
   private boolean fileHeader;
   private String fileHeaderKey;
+  private String regexSeparator = TaildirSourceConfigurationConstants.DEFAULT_REGEX_SEPARATOR;
 
   @Override
   public synchronized void start() {
@@ -100,7 +101,8 @@ public class TaildirSource extends AbstractSource implements
           .cachePatternMatching(cachePatternMatching)
           .annotateFileName(fileHeader)
           .fileNameHeader(fileHeaderKey)
-          .build();
+              .regexSeparator(regexSeparator)
+              .build();
     } catch (IOException e) {
       throw new FlumeException("Error instantiating ReliableTaildirEventReader", e);
     }
@@ -175,6 +177,7 @@ public class TaildirSource extends AbstractSource implements
     writePosInterval = context.getInteger(WRITE_POS_INTERVAL, DEFAULT_WRITE_POS_INTERVAL);
     cachePatternMatching = context.getBoolean(CACHE_PATTERN_MATCHING,
         DEFAULT_CACHE_PATTERN_MATCHING);
+    regexSeparator = context.getString(REGEX_SEPARATOR, DEFAULT_REGEX_SEPARATOR);
 
     backoffSleepIncrement = context.getLong(PollableSourceConstants.BACKOFF_SLEEP_INCREMENT,
         PollableSourceConstants.DEFAULT_BACKOFF_SLEEP_INCREMENT);

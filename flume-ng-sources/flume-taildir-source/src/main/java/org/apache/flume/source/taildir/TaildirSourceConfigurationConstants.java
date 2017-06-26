@@ -63,4 +63,8 @@ public class TaildirSourceConfigurationConstants {
   /** Whether to include absolute path filename in a header. */
   public static final String FILENAME_HEADER = "fileHeader";
   public static final boolean DEFAULT_FILE_HEADER = false;
+
+  public static final String REGEX_SEPARATOR = "regexSeparator";
+  public static final String DEFAULT_REGEX_SEPARATOR =
+          "20\\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])\\s+([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])\\.\\d{3}.*";
 }
