@@ -18,7 +18,7 @@ under the License.
 -->
 ## 修改点：
 在flume-1.7分支上做了如下修改：
-* 解决了日志文件名变动后，会重复读取的问题；
+* 在taildir-source上解决了日志文件名变动后，会重复读取的问题；
 * 之前taildir-source是一个event读取一行，每次批量读取N个event到channel，碰到日志里有异常栈的时候就会出问题，会出现读取的日志不完整，改成按照某个分隔符切分，比如按照时间日期，这样一个event里就是一个完整的可处理的日志，比如我们的日志格式如下：
 ```text
 2017-06-26 21:34:13.222 INFO  com.zxx.test.flume.log.AppenderTest - (AppenderTest.java:24) - xxxxHello world!Hello world!1498484053222
@@ -58,6 +58,7 @@ java.lang.RuntimeException: runtime exception
 2017-06-26 21:35:13.222 INFO  com.zxx.test.flume.log.AppenderTest - (AppenderTest.java:24) - xxxxHello world!Hello world!3452453452345
 ```
 我们就是以这种格式2017-06-26 21:35:13.222作为分割，这样后续sink到kafka等框架后就是完整的日志。
+* 在elasticsearch-sink上修改了写入es的字段，原先是直接把整个日志一股脑塞到body字段里，现在是根据\t_分割出所有的kv对，然后塞到es里。
 
 ## Welcome to Apache Flume!
 

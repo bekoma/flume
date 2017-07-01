@@ -69,6 +69,8 @@ public class ElasticSearchSinkConstants {
    */
   public static final String SERIALIZER_PREFIX = SERIALIZER + ".";
 
+  public static final String SOUCHE_LOG_SEPERATOR = "\t_";
+
   /**
    * The fully qualified class name of the index name builder the sink
    * should use to determine name of index where the event should be sent.
